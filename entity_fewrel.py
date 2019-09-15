@@ -5,7 +5,7 @@ import threading
 from datetime import datetime
 import json
 import tagme
-from config import TAGME_TOKEN, NUM_WORKERS
+from config import TAGME_TOKEN, MAX_WORKERS
 
 tagme.GCUBE_TOKEN = TAGME_TOKEN
 logger = logging.getLogger('Entity extraction(fewrel)')
@@ -76,8 +76,8 @@ class Worker(threading.Thread):
 if __name__ == '__main__':
     for dataset in {'train', 'val'}:
         # Load data
-        if os.path.exists('data/fewrel/{}_tagme.json'.format(dataset)):
-            with open('data/fewrel/{}_tagme.json'.format(dataset),
+        if os.path.exists('data/fewrel/{}_entity.json'.format(dataset)):
+            with open('data/fewrel/{}_entity.json'.format(dataset),
                       'r') as f:
                 data = json.load(f)
         else:
@@ -90,7 +90,9 @@ if __name__ == '__main__':
             if queue.qsize() == 0:
                 logger.info('No job left.')
                 continue
-            for index in range(NUM_WORKERS):
+            # Create workers
+            count = int(min(MAX_WORKERS, queue.qsize() // 20))
+            for index in range(count):
                 w = Worker(index)
                 w.start()
                 workers.append(w)
@@ -106,7 +108,7 @@ if __name__ == '__main__':
                 w.join()
             logger.info('Jobs left: {}.'.format(queue.qsize()))
         # Save data
-        with open('data/fewrel/{}_tagme.json'.format(dataset), 'w') as f:
+        with open('data/fewrel/{}_entity.json'.format(dataset), 'w') as f:
             json.dump(data, f)
         logger.info('Saved data.')
     logger.info('Everything done.')

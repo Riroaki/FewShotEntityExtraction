@@ -7,7 +7,7 @@
 - `python3`
 - `tagme==0.1.3`
 
-To use tagme api, you need to register an account [here](https://sobigdata.d4science.org/group/tagme), and write the token as `TAGME_TOKEN` in  `config.py`.
+To use `tagme` api, you need to register an account [here](https://sobigdata.d4science.org/group/tagme), and write the token as `TAGME_TOKEN` in  `config.py`.
 
 ## Fewshot dataset
 
@@ -15,18 +15,22 @@ To use tagme api, you need to register an account [here](https://sobigdata.d4sci
 
 - Command: `python tag_fewshot.py`
 
-- Output: original file named `A.train` -> `A.train.json`
+- Output: original file named `A.train(dev/test)` -> `A.train(dev/test).json`
 
 - Data format:
-
+    - `pos_begin`: index of starting character in sentence
+    - `pos_end`: index of ending character in sentence
+    - `entity_id`
+    - `score`
+- Sample data:
 ```json
 [{
   "sentence": "lasts only 2 weeks ! try them if you don't believe me",
   "class": "-1",
   "entities": [
     {
-      "pos_begin": 13,  // index of starting character in sentence
-      "pos_end": 18,  // index of ending character in sentence
+      "pos_begin": 13,
+      "pos_end": 18,
       "entity_id": 27493154,
       "score": 0.0007660030387341976
     }, {
@@ -61,7 +65,7 @@ To use tagme api, you need to register an account [here](https://sobigdata.d4sci
       "score": 0.0672566369175911
     }
   ]
-}, ...]
+}]
 ```
 
 ## Fewrel dataset
@@ -70,10 +74,14 @@ To use tagme api, you need to register an account [here](https://sobigdata.d4sci
 
 - Command: `python tag_fewrel.py`
 
-- Output: `train_tagme.json` (you need to copy and rename `train.json`, the script extracts and saves entities in place.)
+- Output: `train(val).json` -> `train(val)_entity.json`
 
-- ÏData format:
-
+- Data format:
+    - `index_begin`: index of starting word in sentence
+    - `index_end`: index of ending word in sentence
+    - `entity_id`
+    - `score`
+- Sample data:
 ```json
 [{
   "tokens": ["In", "June", "1987", ",", "the", "Missouri", "Highway", "and", "Transportation", "Department", "approved", "design", "location", "of", "a", "new", "four", "-", "lane", "Mississippi", "River", "bridge", "to", "replace", "the", "deteriorating", "Cape", "Girardeau", "Bridge", "."],
@@ -81,8 +89,8 @@ To use tagme api, you need to register an account [here](https://sobigdata.d4sci
   "t": ["mississippi river", "Q1497", [[19, 20]]],
   "entities": [
     {
-      "index_begin": 5,  // index of starting word in token list
-      "index_end": 6,  // index of ending word in token list
+      "index_begin": 5,
+      "index_end": 6,
       "entity_id": 19591,
       "score": 0.35695624351501465
     }, {
@@ -122,11 +130,11 @@ To use tagme api, you need to register an account [here](https://sobigdata.d4sci
       "score": 0.5
     }
   ]
-}, ...]
+}]
 ```
 
 ## Note
 
-- Number of threads: specify in `config.py`. Using larger numbers would improve efficiency, but not all the time. 64 is the default value here.
+- Max workers: specify in `config.py`. Using larger numbers would improve efficiency, but not all the time. 64 is the default value here.
 - Termination: The program terminates when all jobs are done. You may stop processing by `ctrl+c` whenever you want, but please make sure all workers exited and the program output `Saved data.`, which means the extracted entities has been written into output files. You may restart and the program would process from where you stopped last time.
 

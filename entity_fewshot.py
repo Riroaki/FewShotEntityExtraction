@@ -5,7 +5,7 @@ import tagme
 import threading
 from datetime import datetime
 from queue import Queue
-from config import TAGME_TOKEN, NUM_WORKERS
+from config import TAGME_TOKEN, MAX_WORKERS
 
 tagme.GCUBE_TOKEN = TAGME_TOKEN
 logger = logging.getLogger('Entity extraction(fewshot)')
@@ -76,7 +76,8 @@ def add_tag(fname: str):
             logger.info('File `{}`: entities already added.'.format(fname))
             return
         # Create workers
-        for index in range(NUM_WORKERS):
+        count = int(min(MAX_WORKERS, queue.qsize() // 20))
+        for index in range(count):
             w = Worker(index)
             w.start()
             workers.append(w)
