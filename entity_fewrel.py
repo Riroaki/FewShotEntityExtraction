@@ -1,16 +1,16 @@
-import sys
+import os
 import logging
 from queue import Queue
 import threading
 from datetime import datetime
 import json
 import tagme
+from config import TAGME_TOKEN, NUM_WORKERS
 
-tagme.GCUBE_TOKEN = 'acb3808f-76fe-444e-832b-aaef47db2f61-843339462'
-logger = logging.getLogger('Tagme-fewrel')
+tagme.GCUBE_TOKEN = TAGME_TOKEN
+logger = logging.getLogger('Entity extraction(fewrel)')
 logger.setLevel(logging.DEBUG)
 queue = Queue()
-num_workers = 128
 
 
 def load_queue():
@@ -54,7 +54,10 @@ class Worker(threading.Thread):
                             length += len(tokens[end]) + 1
                             end += 1
                         # add entity information
-                        entities.append((start, end, ann.score))
+                        entities.append({'index_begin': start,
+                                         'index_end': end,
+                                         'entity_id': ann.entity_id,
+                                         'score': ann.score})
                     sentence_meta['entities'] = entities
                 logger.info(
                     '{}, worker: {}, jobs remain: {}.'.format(datetime.now(),
@@ -71,18 +74,23 @@ class Worker(threading.Thread):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] in {'train', 'val'}:
+    for dataset in {'train', 'val'}:
         # Load data
-        with open('data/fewrel/{}_tagme.json'.format(sys.argv[1]), 'r') as f:
-            data = json.load(f)
+        if os.path.exists('data/fewrel/{}_tagme.json'.format(dataset)):
+            with open('data/fewrel/{}_tagme.json'.format(dataset),
+                      'r') as f:
+                data = json.load(f)
+        else:
+            with open('data/fewrel/{}.json'.format(dataset), 'r') as f:
+                data = json.load(f)
         workers = []
         try:
             # Add sentences to queue
             load_queue()
             if queue.qsize() == 0:
                 logger.info('No job left.')
-                exit(0)
-            for index in range(num_workers):
+                continue
+            for index in range(NUM_WORKERS):
                 w = Worker(index)
                 w.start()
                 workers.append(w)
@@ -98,8 +106,7 @@ if __name__ == '__main__':
                 w.join()
             logger.info('Jobs left: {}.'.format(queue.qsize()))
         # Save data
-        with open('data/fewrel/{}_tagme.json'.format(sys.argv[1]), 'w') as f:
+        with open('data/fewrel/{}_tagme.json'.format(dataset), 'w') as f:
             json.dump(data, f)
         logger.info('Saved data.')
-    else:
-        raise FileNotFoundError
+    logger.info('Everything done.')

@@ -5,13 +5,12 @@ import tagme
 import threading
 from datetime import datetime
 from queue import Queue
+from config import TAGME_TOKEN, NUM_WORKERS
 
-tagme.GCUBE_TOKEN = 'acb3808f-76fe-444e-832b-aaef47db2f61-843339462'
-
-logger = logging.getLogger('Tagme-fewshot')
+tagme.GCUBE_TOKEN = TAGME_TOKEN
+logger = logging.getLogger('Entity extraction(fewshot)')
 logger.setLevel(logging.DEBUG)
 queue = Queue()
-num_workers = 64
 
 
 class Worker(threading.Thread):
@@ -34,8 +33,9 @@ class Worker(threading.Thread):
                 if 'entities' not in sentence_meta:
                     sentence_annotations = tagme.annotate(
                         sentence_meta['sentence'])
-                    entities = [(ann.begin, ann.end, ann.score) for ann in
-                                sentence_annotations.annotations]
+                    entities = [{'pos_begin': ann.begin, 'pos_end': ann.end,
+                                 'entity_id': ann.entity_id, 'score': ann.score}
+                                for ann in sentence_annotations.annotations]
                     sentence_meta['entities'] = entities
                 logger.info(
                     '{}, worker: {}, jobs remain: {}.'.format(datetime.now(),
@@ -56,7 +56,7 @@ def add_tag(fname: str):
     logger.info('Start to add tags for sentences in `{}`.'.format(fname))
     with open(fname, 'r') as f:
         lines = [line.strip() for line in f.readlines()]
-    global queue, num_workers
+    global queue
     workers = []
     try:
         # Put data in queue
@@ -76,7 +76,7 @@ def add_tag(fname: str):
             logger.info('File `{}`: entities already added.'.format(fname))
             return
         # Create workers
-        for index in range(num_workers):
+        for index in range(NUM_WORKERS):
             w = Worker(index)
             w.start()
             workers.append(w)

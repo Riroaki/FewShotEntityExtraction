@@ -1,74 +1,132 @@
 # FewShotEntityExtraction
 
-> Extract entities from sentences in few-shot dataset using `tagme`.
+> Utility scripts to extract entities from sentences in few-shot dataset using `tagme`.
 
 ## Requirements
 
 - `python3`
 - `tagme==0.1.3`
 
+To use tagme api, you need to register an account [here](https://sobigdata.d4science.org/group/tagme), and write the token as `TAGME_TOKEN` in  `config.py`.
+
 ## Fewshot dataset
 
-Data source: `https://github.com/zxlzr/FewShotNLP/tree/master/data`
+- Data source: `https://github.com/zxlzr/FewShotNLP/tree/master/data`
 
-Command: `python tag_fewshot.py`
+- Command: `python tag_fewshot.py`
 
-Output: original file named `A.train` -> `A.train.json`
+- Output: original file named `A.train` -> `A.train.json`
 
-Data format:
+- Data format:
 
 ```json
 [{
-  "sentence": "nice looking picture but what dementions thing ? it looks good but it 4 \" 8 \" or 12 \" 8 \" ? sure would nice know size before i buy ............. da trol",
-  "class": "1",
+  "sentence": "lasts only 2 weeks ! try them if you don't believe me",
+  "class": "-1",
   "entities": [
-    [0, 4, 0.11888746172189713],  // begin position, end location, score
-    [0, 12, 0.12973745167255402],
-    [13, 20, 0.017505625262856483],
-    [41, 46, 0.02188337966799736],
-    [58, 62, 0.0011372914304956794],
-    [92, 96, 0.042721934616565704],
-    [103, 107, 0.124010369181633],
-    [113, 117, 0.013514379970729351],
-    [127, 130, 0.03306431695818901],
-    [145, 147, 0.11792175471782684],
-    [148, 152, 0.10552945733070374]
+    {
+      "pos_begin": 13,  // index of starting character in sentence
+      "pos_end": 18,  // index of ending character in sentence
+      "entity_id": 27493154,
+      "score": 0.0007660030387341976
+    }, {
+      "pos_begin": 21,
+      "pos_end": 24,
+      "entity_id": 3276812,
+      "score": 0.009006991051137447
+    }, {
+      "pos_begin": 30,
+      "pos_end": 32,
+      "entity_id": 1685851,
+      "score": 0.07183314114809036
+    }, {
+      "pos_begin": 33,
+      "pos_end": 36,
+      "entity_id": 14148802,
+      "score": 0.19438420236110687
+    }, {
+      "pos_begin": 37,
+      "pos_end": 40,
+      "entity_id": 294015,
+      "score": 0.010517369955778122
+    }, {
+      "pos_begin": 37,
+      "pos_end": 50,
+      "entity_id": 27690196,
+      "score": 0.005518087185919285
+    }, {
+      "pos_begin": 43,
+      "pos_end": 53,
+      "entity_id": 38740213,
+      "score": 0.0672566369175911
+    }
   ]
 }, ...]
 ```
 
 ## Fewrel dataset
 
-Data source: `https://github.com/thunlp/FewRel/tree/master/data`
+- Data source: `https://github.com/thunlp/FewRel/tree/master/data`
 
-Command: `python tag_fewrel.py [train/val]`
+- Command: `python tag_fewrel.py`
 
-Output: `train_tagme.json` (you need to copy and rename `train.json`, the script extracts and saves entities in place.)
+- Output: `train_tagme.json` (you need to copy and rename `train.json`, the script extracts and saves entities in place.)
 
-Data format:
+- ÏData format:
 
 ```json
 [{
-  "tokens": ["It", "is", "the", "main", "alternate", "of", "Jinnah", "International", "Airport", "in", "Karachi", "with", "a", "distance", "of", "about", "350", "\u00a0", "km/220", "miles", ";", "well", "under", "an", "hour", "'s", "flight", "time", "in", "turboprop", "aircraft", "."],
-  "h": ["jinnah international airport", "Q61052", [[6, 7, 8]]],
-  "t": ["karachi", "Q8660", [[10]]],
+  "tokens": ["In", "June", "1987", ",", "the", "Missouri", "Highway", "and", "Transportation", "Department", "approved", "design", "location", "of", "a", "new", "four", "-", "lane", "Mississippi", "River", "bridge", "to", "replace", "the", "deteriorating", "Cape", "Girardeau", "Bridge", "."],
+  "h": ["cape girardeau bridge", "Q5034838", [[26, 27, 28]]],
+  "t": ["mississippi river", "Q1497", [[19, 20]]],
   "entities": [
-    [3, 4, 0.05648687109351158],
-    [4, 5, 0.05953952670097351],
-    [6, 9, 0.5],
-    [7, 9, 0.24509519338607788],
-    [8, 9, 0.18682029843330383],
-    [10, 11, 0.4931352138519287],
-    [13, 14, 0.18960361182689667],
-    [18, 19, 0.2723827362060547],
-    [19, 20, 0.2740946114063263],
-    [21, 22, 0.0614713579416275],
-    [22, 25, 0.013358778320252895],
-    [26, 27, 0.05468727648258209],
-    [27, 28, 0.0891151949763298],
-    [29, 30, 0.4731414318084717],
-    [30, 31, 0.24223822355270386]
+    {
+      "index_begin": 5,  // index of starting word in token list
+      "index_end": 6,  // index of ending word in token list
+      "entity_id": 19591,
+      "score": 0.35695624351501465
+    }, {
+      "index_begin": 6,
+      "index_end": 7,
+      "entity_id": 48519,
+      "score": 0.22454741597175598
+    }, {
+      "index_begin": 8,
+      "index_end": 10,
+      "entity_id": 58235,
+      "score": 0.015105740167200565
+    }, {
+      "index_begin": 11,
+      "index_end": 12,
+      "entity_id": 631159,
+      "score": 0.08602561801671982
+    }, {
+      "index_begin": 12,
+      "index_end": 13,
+      "entity_id": 2272383,
+      "score": 0.09302778542041779
+    }, {
+      "index_begin": 18,
+      "index_end": 19,
+      "entity_id": 95699,
+      "score": 0.0887017548084259
+    }, {
+      "index_begin": 19,
+      "index_end": 21,
+      "entity_id": 19579,
+      "score": 0.6045866012573242
+    }, {
+      "index_begin": 26,
+      "index_end": 29,
+      "entity_id": 4910093,
+      "score": 0.5
+    }
   ]
-},...]
+}, ...]
 ```
+
+## Note
+
+- Number of threads: specify in `config.py`. Using larger numbers would improve efficiency, but not all the time. 64 is the default value here.
+- Termination: The program terminates when all jobs are done. You may stop processing by `ctrl+c` whenever you want, but please make sure all workers exited and the program output `Saved data.`, which means the extracted entities has been written into output files. You may restart and the program would process from where you stopped last time.
 
