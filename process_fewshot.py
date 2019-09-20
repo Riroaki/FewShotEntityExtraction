@@ -1,16 +1,14 @@
 import os
 import logging
 import json
-import tagme
 import threading
 from datetime import datetime
 from queue import Queue
-from config import TAGME_TOKEN, MAX_WORKERS
+from config import MAX_WORKERS
+from get_entity import get_entities
 
-tagme.GCUBE_TOKEN = TAGME_TOKEN
-logger = logging.getLogger('Entity extraction(fewshot)')
-logger.setLevel(logging.DEBUG)
-queue = Queue()
+logger = logging.getLogger('Few-shot')
+Q = Queue()
 
 
 class Worker(threading.Thread):
@@ -22,29 +20,24 @@ class Worker(threading.Thread):
         self._stop_event = threading.Event()
 
     def run(self):
-        global queue
-        while queue.qsize() > 0:
+        while Q.qsize() > 0:
             # Killed
             if self._stop_event.is_set():
                 break
             # Extract entities from sentences in queue
-            sentence_meta = queue.get()
+            sentence_meta = Q.get()
             try:
                 if 'entities' not in sentence_meta:
-                    sentence_annotations = tagme.annotate(
-                        sentence_meta['sentence'])
-                    entities = [{'pos_begin': ann.begin, 'pos_end': ann.end,
-                                 'entity_id': ann.entity_id, 'score': ann.score}
-                                for ann in sentence_annotations.annotations]
+                    entities = get_entities(sentence_meta['sentence'])
                     sentence_meta['entities'] = entities
                 logger.info(
                     '{}, worker: {}, jobs remain: {}.'.format(datetime.now(),
                                                               self._index,
-                                                              queue.qsize()))
+                                                              Q.qsize()))
             except Exception as e:
                 logger.warning(e)
                 # Send job back to queue
-                queue.put(sentence_meta)
+                Q.put(sentence_meta)
         logger.info('Worker {} exited.'.format(self._index))
 
     def stop(self):
@@ -56,7 +49,6 @@ def add_tag(fname: str):
     logger.info('Start to add tags for sentences in `{}`.'.format(fname))
     with open(fname, 'r') as f:
         lines = [line.strip() for line in f.readlines()]
-    global queue
     workers = []
     try:
         # Put data in queue
@@ -70,17 +62,16 @@ def add_tag(fname: str):
                 dataset.append({'sentence': sentence, 'class': cls})
         for sentence_meta in dataset:
             if 'entities' not in sentence_meta:
-                queue.put(sentence_meta)
+                Q.put(sentence_meta)
         # All work finished
-        if queue.qsize() == 0:
+        if Q.qsize() == 0:
             logger.info('File `{}`: entities already added.'.format(fname))
             return
         # Create workers
-        count = int(min(MAX_WORKERS, queue.qsize() // 20))
-        for index in range(count):
-            w = Worker(index)
-            w.start()
-            workers.append(w)
+        count = int(min(MAX_WORKERS, Q.qsize() // 20))
+        workers = [Worker(index) for index in range(count)]
+        _ = [w.start() for w in workers]
+        # Wait till every worker finishes
         for w in workers:
             w.join()
         with open(json_file, 'w') as f:
@@ -89,12 +80,10 @@ def add_tag(fname: str):
     except KeyboardInterrupt:
         logger.info('Stopped by user.')
         # Stop workers
-        for w in workers:
-            w.stop()
+        _ = [w.stop() for w in workers]
         for w in workers:
             w.join()
-        logger.info('Jobs left: {} for file: `{}`.'.format(queue.qsize(),
-                                                           fname))
+        logger.info('Jobs left: {} for file: `{}`.'.format(Q.qsize(), fname))
 
 
 if __name__ == '__main__':
@@ -106,3 +95,4 @@ if __name__ == '__main__':
             os.listdir(data_dir)):
         full_name = os.path.join(data_dir, filename)
         add_tag(full_name)
+        logger.info('File `{}` processed.'.format(full_name))

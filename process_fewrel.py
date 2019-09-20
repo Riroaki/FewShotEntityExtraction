@@ -1,24 +1,21 @@
 import os
-import logging
-from queue import Queue
-import threading
-from datetime import datetime
 import json
-import tagme
-from config import TAGME_TOKEN, MAX_WORKERS
+import logging
+import threading
+from queue import Queue
+from datetime import datetime
+from config import MAX_WORKERS
+from get_entity import get_entities
 
-tagme.GCUBE_TOKEN = TAGME_TOKEN
-logger = logging.getLogger('Entity extraction(fewrel)')
-logger.setLevel(logging.DEBUG)
-queue = Queue()
+logger = logging.getLogger('Few-rel')
+Q = Queue()
 
 
 def load_queue():
-    global queue, data
     for rel, sentence_list in data.items():
         for sentence_meta in sentence_list:
             if 'entities' not in sentence_meta:
-                queue.put(sentence_meta)
+                Q.put(sentence_meta)
 
 
 class Worker(threading.Thread):
@@ -30,43 +27,40 @@ class Worker(threading.Thread):
         self._stop_event = threading.Event()
 
     def run(self):
-        global queue
-        while queue.qsize() > 0:
+        global Q
+        while Q.qsize() > 0:
             # Killed
             if self._stop_event.is_set():
                 break
             # Extract entities from sentences in queue
-            sentence_meta = queue.get()
+            sentence_meta = Q.get()
             try:
                 if 'entities' not in sentence_meta:
                     tokens = sentence_meta['tokens']
                     sentence = ' '.join(tokens)
-                    sentence_annotations = tagme.annotate(sentence)
-                    entities = []
-                    for ann in sentence_annotations.annotations:
+                    entities = get_entities(sentence)
+                    for entity in entities:
                         # map entity back to word position
                         start, length = 0, 0
-                        while length < ann.begin:
+                        while length < entity['start_pos']:
                             length += len(tokens[start]) + 1
                             start += 1
                         end = start
-                        while length < ann.end:
+                        while length < entity['end_pos']:
                             length += len(tokens[end]) + 1
                             end += 1
                         # add entity information
-                        entities.append({'index_begin': start,
-                                         'index_end': end,
-                                         'entity_id': ann.entity_id,
-                                         'score': ann.score})
+                        entity['index_begin'] = start
+                        entity['index_end'] = end
                     sentence_meta['entities'] = entities
                 logger.info(
                     '{}, worker: {}, jobs remain: {}.'.format(datetime.now(),
                                                               self._index,
-                                                              queue.qsize()))
+                                                              Q.qsize()))
             except Exception as e:
                 logger.warning(e)
                 # Send job back to queue
-                queue.put(sentence_meta)
+                Q.put(sentence_meta)
         logger.info('Worker {} exited.'.format(self._index))
 
     def stop(self):
@@ -87,28 +81,25 @@ if __name__ == '__main__':
         try:
             # Add sentences to queue
             load_queue()
-            if queue.qsize() == 0:
+            if Q.qsize() == 0:
                 logger.info('No job left.')
                 continue
             # Create workers
-            count = int(min(MAX_WORKERS, queue.qsize() // 20))
-            for index in range(count):
-                w = Worker(index)
-                w.start()
-                workers.append(w)
+            count = int(min(MAX_WORKERS, Q.qsize() // 20))
+            workers = [Worker(index) for index in range(count)]
+            _ = [w.start() for w in workers]
             # Wait till jobs finished
             for w in workers:
                 w.join()
         except KeyboardInterrupt:
             logger.info('Stopped by user.')
             # Stop workers
-            for w in workers:
-                w.stop()
+            _ = [w.stop() for w in workers]
             for w in workers:
                 w.join()
-            logger.info('Jobs left: {}.'.format(queue.qsize()))
+            logger.info('Jobs left: {}.'.format(Q.qsize()))
         # Save data
         with open('data/fewrel/{}_entity.json'.format(dataset), 'w') as f:
             json.dump(data, f)
-        logger.info('Saved data.')
-    logger.info('Everything done.')
+        full_name = 'data/fewrel/{}.json'.format(dataset)
+        logger.info('File `{}` processed.'.format(full_name))
