@@ -12,7 +12,7 @@ Q = Queue()
 
 
 def load_queue():
-    for rel, sentence_list in data.items():
+    for rel, sentence_list in DATA.items():
         for sentence_meta in sentence_list:
             if 'entities' not in sentence_meta:
                 Q.put(sentence_meta)
@@ -73,10 +73,10 @@ if __name__ == '__main__':
         if os.path.exists('data/fewrel/{}_entity.json'.format(dataset)):
             with open('data/fewrel/{}_entity.json'.format(dataset),
                       'r') as f:
-                data = json.load(f)
+                DATA = json.load(f)
         else:
             with open('data/fewrel/{}.json'.format(dataset), 'r') as f:
-                data = json.load(f)
+                DATA = json.load(f)
         workers = []
         try:
             # Add sentences to queue
@@ -85,7 +85,7 @@ if __name__ == '__main__':
                 logger.info('No job left.')
                 continue
             # Create workers
-            count = int(min(MAX_WORKERS, Q.qsize() // 20))
+            count = int(min(MAX_WORKERS, Q.qsize() // 10))
             workers = [Worker(index) for index in range(count)]
             _ = [w.start() for w in workers]
             # Wait till jobs finished
@@ -100,6 +100,6 @@ if __name__ == '__main__':
             logger.info('Jobs left: {}.'.format(Q.qsize()))
         # Save data
         with open('data/fewrel/{}_entity.json'.format(dataset), 'w') as f:
-            json.dump(data, f)
+            json.dump(DATA, f)
         full_name = 'data/fewrel/{}.json'.format(dataset)
         logger.info('File `{}` processed.'.format(full_name))

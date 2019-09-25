@@ -9,4 +9,4 @@ KG_KEY = 'AIzaSyBTVtO0EKStF2ARbtVYuevcGclxKVJOpnE'
 # Proxy: cross the GFW
 PROXIES = {'https': 'https://127.0.0.1:1087'}
 # Number of threads in entity extraction
-MAX_WORKERS = 64
+MAX_WORKERS = 100

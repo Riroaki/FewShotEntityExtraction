@@ -68,7 +68,7 @@ def add_tag(fname: str):
             logger.info('File `{}`: entities already added.'.format(fname))
             return
         # Create workers
-        count = int(min(MAX_WORKERS, Q.qsize() // 20))
+        count = int(min(MAX_WORKERS, Q.qsize() // 10))
         workers = [Worker(index) for index in range(count)]
         _ = [w.start() for w in workers]
         # Wait till every worker finishes
@@ -76,7 +76,6 @@ def add_tag(fname: str):
             w.join()
         with open(json_file, 'w') as f:
             json.dump(dataset, f)
-        logger.info('File `{}`: done.'.format(fname))
     except KeyboardInterrupt:
         logger.info('Stopped by user.')
         # Stop workers
